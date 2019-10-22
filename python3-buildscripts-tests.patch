@@ -1,0 +1,1727 @@
+diff --git a/SConstruct b/SConstruct
+index f949f65475..78eab698b9 100644
+--- a/SConstruct
++++ b/SConstruct
+@@ -383,7 +383,7 @@ win_version_min_choices = {
+ }
+ 
+ add_option('win-version-min',
+-    choices=win_version_min_choices.keys(),
++    choices=list(win_version_min_choices.keys()),
+     default=None,
+     help='minimum Windows version to support',
+     type='choice',
+@@ -492,7 +492,7 @@ except ValueError as e:
+ def variable_shlex_converter(val):
+     # If the argument is something other than a string, propogate
+     # it literally.
+-    if not isinstance(val, basestring):
++    if not isinstance(val, str):
+         return val
+     parse_mode = get_option('variable-parse-mode')
+     if parse_mode == 'auto':
+@@ -820,7 +820,7 @@ SConsignFile(str(sconsDataDir.File('sconsign')))
+ def printLocalInfo():
+     import sys, SCons
+     print( "scons version: " + SCons.__version__ )
+-    print( "python version: " + " ".join( [ `i` for i in sys.version_info ] ) )
++    print( "python version: " + " ".join( [ str(i) for i in sys.version_info ] ) )
+ 
+ printLocalInfo()
+ 
+@@ -1930,7 +1930,7 @@ def doConfigure(myenv):
+         # to make them real errors.
+         cloned.Append(CCFLAGS=['-Werror'])
+         conf = Configure(cloned, help=False, custom_tests = {
+-                'CheckFlag' : lambda(ctx) : CheckFlagTest(ctx, tool, extension, flag)
++                'CheckFlag' : lambda ctx : CheckFlagTest(ctx, tool, extension, flag)
+         })
+         available = conf.CheckFlag()
+         conf.Finish()
+@@ -2402,7 +2402,7 @@ def doConfigure(myenv):
+             "undefined" : myenv.File("#etc/ubsan.blacklist"),
+         }
+ 
+-        blackfiles = set([v for (k, v) in blackfiles_map.iteritems() if k in sanitizer_list])
++        blackfiles = set([v for (k, v) in blackfiles_map.items() if k in sanitizer_list])
+         blacklist_options=["-fsanitize-blacklist=%s" % blackfile
+                            for blackfile in blackfiles
+                            if os.stat(blackfile.path).st_size != 0]
+diff --git a/buildscripts/clang_format.py b/buildscripts/clang_format.py
+index cf9884d8b1..c0f4140e59 100755
+--- a/buildscripts/clang_format.py
++++ b/buildscripts/clang_format.py
+@@ -20,7 +20,7 @@ import sys
+ import tarfile
+ import tempfile
+ import threading
+-import urllib2
++import urllib.request, urllib.error, urllib.parse
+ from distutils import spawn
+ from optparse import OptionParser
+ from multiprocessing import cpu_count
+@@ -96,11 +96,11 @@ def get_clang_format_from_cache_and_extract(url, tarball_ext):
+     num_tries = 5
+     for attempt in range(num_tries):
+         try:
+-            resp = urllib2.urlopen(url)
++            resp = urllib.request.urlopen(url)
+             with open(temp_tar_file, 'wb') as f:
+               f.write(resp.read())
+             break
+-        except urllib2.URLError:
++        except urllib.error.URLError:
+             if attempt == num_tries - 1:
+                 raise
+             continue
+@@ -436,7 +436,7 @@ def reformat_branch(clang_format, commit_prior_to_reformat, commit_after_reforma
+ 
+         # Check if anything needed reformatting, and if so amend the commit
+         if not repo.is_working_tree_dirty():
+-            print ("Commit %s needed no reformatting" % commit_hash)
++            print("Commit %s needed no reformatting" % commit_hash)
+         else:
+             repo.commit(["--all", "--amend", "--no-edit"])
+ 
+diff --git a/buildscripts/cpplint.py b/buildscripts/cpplint.py
+index 6979cbcd4e..bc9ff038fd 100755
+--- a/buildscripts/cpplint.py
++++ b/buildscripts/cpplint.py
+@@ -835,7 +835,7 @@ class _CppLintState(object):
+ 
+   def PrintErrorCounts(self):
+     """Print a summary of errors by category, and the total."""
+-    for category, count in self.errors_by_category.iteritems():
++    for category, count in self.errors_by_category.items():
+       sys.stderr.write('Category \'%s\' errors found: %d\n' %
+                        (category, count))
+     sys.stderr.write('Total errors found: %d\n' % self.error_count)
+@@ -1388,7 +1388,7 @@ def FindEndOfExpressionInLine(line, startpos, stack):
+     On finding an unclosed expression: (-1, None)
+     Otherwise: (-1, new stack at end of this line)
+   """
+-  for i in xrange(startpos, len(line)):
++  for i in range(startpos, len(line)):
+     char = line[i]
+     if char in '([{':
+       # Found start of parenthesized expression, push to expression stack
+@@ -1681,7 +1681,7 @@ def CheckForCopyright(filename, lines, error):
+ 
+   # We'll say it should occur by line 10. Don't forget there's a
+   # dummy line at the front.
+-  for line in xrange(1, min(len(lines), 11)):
++  for line in range(1, min(len(lines), 11)):
+     if re.search(r'Copyright', lines[line], re.I): break
+   else:                       # means no copyright line was found
+     error(filename, 0, 'legal/copyright', 5,
+@@ -1832,7 +1832,7 @@ def CheckForBadCharacters(filename, lines, error):
+     error: The function to call with any errors found.
+   """
+   for linenum, line in enumerate(lines):
+-    if u'\ufffd' in line:
++    if '\ufffd' in line:
+       error(filename, linenum, 'readability/utf8', 5,
+             'Line contains invalid UTF-8 (or Unicode replacement character).')
+     if '\0' in line:
+@@ -2878,7 +2878,7 @@ def CheckForFunctionLengths(filename, clean_lines, linenum,
+ 
+   if starting_func:
+     body_found = False
+-    for start_linenum in xrange(linenum, clean_lines.NumLines()):
++    for start_linenum in range(linenum, clean_lines.NumLines()):
+       start_line = lines[start_linenum]
+       joined_line += ' ' + start_line.lstrip()
+       if Search(r'(;|})', start_line):  # Declarations and trivial functions
+@@ -3355,7 +3355,7 @@ def CheckBracesSpacing(filename, clean_lines, linenum, error):
+     trailing_text = ''
+     if endpos > -1:
+       trailing_text = endline[endpos:]
+-    for offset in xrange(endlinenum + 1,
++    for offset in range(endlinenum + 1,
+                          min(endlinenum + 3, clean_lines.NumLines() - 1)):
+       trailing_text += clean_lines.elided[offset]
+     if not Match(r'^[\s}]*[{.;,)<>\]:]', trailing_text):
+@@ -3524,7 +3524,7 @@ def IsRValueType(clean_lines, nesting_state, linenum, column):
+ 
+     # Look for the previous 'for(' in the previous lines.
+     before_text = match_symbol.group(1)
+-    for i in xrange(start - 1, max(start - 6, 0), -1):
++    for i in range(start - 1, max(start - 6, 0), -1):
+       before_text = clean_lines.elided[i] + before_text
+     if Search(r'for\s*\([^{};]*$', before_text):
+       # This is the condition inside a for-loop
+@@ -3651,12 +3651,12 @@ def IsRValueAllowed(clean_lines, linenum):
+     True if line is within the region where RValue references are allowed.
+   """
+   # Allow region marked by PUSH/POP macros
+-  for i in xrange(linenum, 0, -1):
++  for i in range(linenum, 0, -1):
+     line = clean_lines.elided[i]
+     if Match(r'GOOGLE_ALLOW_RVALUE_REFERENCES_(?:PUSH|POP)', line):
+       if not line.endswith('PUSH'):
+         return False
+-      for j in xrange(linenum, clean_lines.NumLines(), 1):
++      for j in range(linenum, clean_lines.NumLines(), 1):
+         line = clean_lines.elided[j]
+         if Match(r'GOOGLE_ALLOW_RVALUE_REFERENCES_(?:PUSH|POP)', line):
+           return line.endswith('POP')
+@@ -4136,7 +4136,7 @@ def CheckCheck(filename, clean_lines, linenum, error):
+     expression = lines[linenum][start_pos + 1:end_pos - 1]
+   else:
+     expression = lines[linenum][start_pos + 1:]
+-    for i in xrange(linenum + 1, end_line):
++    for i in range(linenum + 1, end_line):
+       expression += lines[i]
+     expression += last_line[0:end_pos - 1]
+ 
+@@ -4264,7 +4264,7 @@ def GetLineWidth(line):
+     The width of the line in column positions, accounting for Unicode
+     combining characters and wide characters.
+   """
+-  if isinstance(line, unicode):
++  if isinstance(line, str):
+     width = 0
+     for uc in unicodedata.normalize('NFC', line):
+       if unicodedata.east_asian_width(uc) in ('W', 'F'):
+@@ -4617,7 +4617,7 @@ def _GetTextInside(text, start_pattern):
+ 
+   # Give opening punctuations to get the matching close-punctuations.
+   matching_punctuation = {'(': ')', '{': '}', '[': ']'}
+-  closing_punctuation = set(matching_punctuation.itervalues())
++  closing_punctuation = set(matching_punctuation.values())
+ 
+   # Find the position to start extracting text.
+   match = re.search(start_pattern, text, re.M)
+@@ -4943,7 +4943,7 @@ def IsDerivedFunction(clean_lines, linenum):
+     virt-specifier.
+   """
+   # Scan back a few lines for start of current function
+-  for i in xrange(linenum, max(-1, linenum - 10), -1):
++  for i in range(linenum, max(-1, linenum - 10), -1):
+     match = Match(r'^([^()]*\w+)\(', clean_lines.elided[i])
+     if match:
+       # Look for "override" after the matching closing parenthesis
+@@ -4964,7 +4964,7 @@ def IsInitializerList(clean_lines, linenum):
+     True if current line appears to be inside constructor initializer
+     list, False otherwise.
+   """
+-  for i in xrange(linenum, 1, -1):
++  for i in range(linenum, 1, -1):
+     line = clean_lines.elided[i]
+     if i == linenum:
+       remove_function_body = Match(r'^(.*)\{\s*$', line)
+@@ -5060,7 +5060,7 @@ def CheckForNonConstReference(filename, clean_lines, linenum,
+           # Found the matching < on an earlier line, collect all
+           # pieces up to current line.
+           line = ''
+-          for i in xrange(startline, linenum + 1):
++          for i in range(startline, linenum + 1):
+             line += clean_lines.elided[i].strip()
+ 
+   # Check for non-const references in function parameters.  A single '&' may
+@@ -5084,7 +5084,7 @@ def CheckForNonConstReference(filename, clean_lines, linenum,
+   # appear inside the second set of parentheses on the current line as
+   # opposed to the first set.
+   if linenum > 0:
+-    for i in xrange(linenum - 1, max(0, linenum - 10), -1):
++    for i in range(linenum - 1, max(0, linenum - 10), -1):
+       previous_line = clean_lines.elided[i]
+       if not Search(r'[),]\s*$', previous_line):
+         break
+@@ -5115,7 +5115,7 @@ def CheckForNonConstReference(filename, clean_lines, linenum,
+     # Don't see a whitelisted function on this line.  Actually we
+     # didn't see any function name on this line, so this is likely a
+     # multi-line parameter list.  Try a bit harder to catch this case.
+-    for i in xrange(2):
++    for i in range(2):
+       if (linenum > i and
+           Search(whitelisted_functions, clean_lines.elided[linenum - i - 1])):
+         return
+@@ -5277,7 +5277,7 @@ def CheckCStyleCast(filename, clean_lines, linenum, cast_type, pattern, error):
+   # Try expanding current context to see if we one level of
+   # parentheses inside a macro.
+   if linenum > 0:
+-    for i in xrange(linenum - 1, max(0, linenum - 5), -1):
++    for i in range(linenum - 1, max(0, linenum - 5), -1):
+       context = clean_lines.elided[i] + context
+   if Match(r'.*\b[_A-Z][_A-Z0-9]*\s*\((?:\([^()]*\)|[^()])*$', context):
+     return False
+@@ -5534,7 +5534,7 @@ def CheckForIncludeWhatYouUse(filename, clean_lines, include_state, error,
+   required = {}  # A map of header name to linenumber and the template entity.
+                  # Example of required: { '<functional>': (1219, 'less<>') }
+ 
+-  for linenum in xrange(clean_lines.NumLines()):
++  for linenum in range(clean_lines.NumLines()):
+     line = clean_lines.elided[linenum]
+     if not line or line[0] == '#':
+       continue
+@@ -5583,7 +5583,7 @@ def CheckForIncludeWhatYouUse(filename, clean_lines, include_state, error,
+ 
+   # include_dict is modified during iteration, so we iterate over a copy of
+   # the keys.
+-  header_keys = include_dict.keys()
++  header_keys = list(include_dict.keys())
+   for header in header_keys:
+     (same_module, common_path) = FilesBelongToSameModule(abs_filename, header)
+     fullpath = common_path + header
+@@ -5678,7 +5678,7 @@ def CheckRedundantVirtual(filename, clean_lines, linenum, error):
+   end_col = -1
+   end_line = -1
+   start_col = len(virtual.group(1))
+-  for start_line in xrange(linenum, min(linenum + 3, clean_lines.NumLines())):
++  for start_line in range(linenum, min(linenum + 3, clean_lines.NumLines())):
+     line = clean_lines.elided[start_line][start_col:]
+     parameter_list = Match(r'^([^(]*)\(', line)
+     if parameter_list:
+@@ -5693,7 +5693,7 @@ def CheckRedundantVirtual(filename, clean_lines, linenum, error):
+ 
+   # Look for "override" or "final" after the parameter list
+   # (possibly on the next few lines).
+-  for i in xrange(end_line, min(end_line + 3, clean_lines.NumLines())):
++  for i in range(end_line, min(end_line + 3, clean_lines.NumLines())):
+     line = clean_lines.elided[i][end_col:]
+     match = Search(r'\b(override|final)\b', line)
+     if match:
+@@ -5920,7 +5920,7 @@ def ProcessFileData(filename, file_extension, lines, error,
+ 
+   RemoveMultiLineComments(filename, lines, error)
+   clean_lines = CleansedLines(lines)
+-  for line in xrange(clean_lines.NumLines()):
++  for line in range(clean_lines.NumLines()):
+     ProcessLine(filename, file_extension, clean_lines, line,
+                 include_state, function_state, nesting_state, error,
+                 extra_check_functions)
+diff --git a/buildscripts/errorcodes.py b/buildscripts/errorcodes.py
+index cc46789907..7351e6a12e 100755
+--- a/buildscripts/errorcodes.py
++++ b/buildscripts/errorcodes.py
+@@ -5,13 +5,16 @@
+ Parses .cpp files for assertions and verifies assertion codes are distinct.
+ Optionally replaces zero codes in source code with new distinct values.
+ """
++from __future__ import unicode_literals
++import io
+ 
+ import bisect
+ import os
+ import sys
+-import utils
++from . import utils
+ from collections import defaultdict, namedtuple
+ from optparse import OptionParser
++from functools import reduce
+ 
+ try:
+     import regex as re
+@@ -66,9 +69,9 @@ def parseSourceFiles( callback ):
+ 
+     for sourceFile in utils.getAllSourceFiles(prefix='src/mongo/'):
+         if list_files:
+-            print 'scanning file: ' + sourceFile
++            print('scanning file: ' + sourceFile)
+ 
+-        with open(sourceFile) as f:
++        with io.open(sourceFile, encoding="utf-8") as f:
+             text = f.read()
+ 
+             if not any([zz in text for zz in quick]):
+@@ -159,7 +162,7 @@ def readErrorCodes():
+ 
+     parseSourceFiles( checkDups )
+ 
+-    if seen.has_key("0"):
++    if "0" in seen:
+         code = "0"
+         bad = seen[code]
+         errors.append( bad )
+@@ -167,7 +170,7 @@ def readErrorCodes():
+         print( "ZERO_CODE:" )
+         print( "  %s:%d:%d:%s" % (bad.sourceFile, line, col, bad.lines) )
+ 
+-    for code, locations in dups.items():
++    for code, locations in list(dups.items()):
+         print( "DUPLICATE IDS: %s" % code )
+         for loc in locations:
+             line, col = getLineAndColumnForPosition(loc)
+@@ -189,19 +192,19 @@ def replaceBadCodes( errors, nextCode ):
+ 
+     for loc in skip_errors:
+         line, col = getLineAndColumnForPosition(loc)
+-        print ("SKIPPING NONZERO code=%s: %s:%d:%d"
++        print("SKIPPING NONZERO code=%s: %s:%d:%d"
+                 % (loc.code, loc.sourceFile, line, col))
+ 
+     # Dedupe, sort, and reverse so we don't have to update offsets as we go.
+     for assertLoc in reversed(sorted(set(zero_errors))):
+         (sourceFile, byteOffset, lines, code) = assertLoc
+         lineNum, _ = getLineAndColumnForPosition(assertLoc)
+-        print "UPDATING_FILE: %s:%s" % (sourceFile, lineNum)
++        print("UPDATING_FILE: %s:%s" % (sourceFile, lineNum))
+ 
+         ln = lineNum - 1
+ 
+         with open(sourceFile, 'r+') as f:
+-            print "LINE_%d_BEFORE:%s" % (lineNum, f.readlines()[ln].rstrip())
++            print("LINE_%d_BEFORE:%s" % (lineNum, f.readlines()[ln].rstrip()))
+ 
+             f.seek(0)
+             text = f.read()
+@@ -212,7 +215,7 @@ def replaceBadCodes( errors, nextCode ):
+             f.write(text[byteOffset+1:])
+             f.seek(0)
+ 
+-            print "LINE_%d_AFTER :%s" % (lineNum, f.readlines()[ln].rstrip())
++            print("LINE_%d_AFTER :%s" % (lineNum, f.readlines()[ln].rstrip()))
+         nextCode += 1
+ 
+ 
+@@ -281,7 +284,7 @@ def main():
+     elif options.replace:
+         replaceBadCodes(errors, next)
+     else:
+-        print ERROR_HELP
++        print(ERROR_HELP)
+         sys.exit(1)
+ 
+ 
+diff --git a/buildscripts/eslint.py b/buildscripts/eslint.py
+index c1ab04fbab..d5c6aef4fc 100755
+--- a/buildscripts/eslint.py
++++ b/buildscripts/eslint.py
+@@ -18,7 +18,7 @@ import sys
+ import tarfile
+ import tempfile
+ import threading
+-import urllib
++import urllib.request, urllib.parse, urllib.error
+ from distutils import spawn
+ from optparse import OptionParser
+ 
+@@ -81,7 +81,7 @@ def get_eslint_from_cache(dest_file, platform, arch):
+     # Download the file
+     print("Downloading ESLint %s from %s, saving to %s" % (ESLINT_VERSION,
+                                                            url, temp_tar_file))
+-    urllib.urlretrieve(url, temp_tar_file)
++    urllib.request.urlretrieve(url, temp_tar_file)
+ 
+     eslint_distfile = ESLINT_SOURCE_TAR_BASE.substitute(platform=platform, arch=arch)
+     extract_eslint(temp_tar_file, eslint_distfile)
+diff --git a/buildscripts/idl/idl/binder.py b/buildscripts/idl/idl/binder.py
+index 354acca974..9612e39305 100644
+--- a/buildscripts/idl/idl/binder.py
++++ b/buildscripts/idl/idl/binder.py
+@@ -608,7 +608,7 @@ def _validate_enum_int(ctxt, idl_enum):
+     min_value = min(int_values_set)
+     max_value = max(int_values_set)
+ 
+-    valid_int = {x for x in xrange(min_value, max_value + 1)}
++    valid_int = {x for x in range(min_value, max_value + 1)}
+ 
+     if valid_int != int_values_set:
+         ctxt.add_enum_non_continuous_range_error(idl_enum, idl_enum.name)
+diff --git a/buildscripts/idl/idl/bson.py b/buildscripts/idl/idl/bson.py
+index 214b67a7bf..b84421d657 100644
+--- a/buildscripts/idl/idl/bson.py
++++ b/buildscripts/idl/idl/bson.py
+@@ -141,7 +141,7 @@ def cpp_bson_type_name(name):
+ def list_valid_types():
+     # type: () -> List[unicode]
+     """Return a list of supported bson types."""
+-    return [a for a in _BSON_TYPE_INFORMATION.iterkeys()]
++    return [a for a in _BSON_TYPE_INFORMATION.keys()]
+ 
+ 
+ def is_valid_bindata_subtype(name):
+diff --git a/buildscripts/idl/idl/cpp_types.py b/buildscripts/idl/idl/cpp_types.py
+index aafcf87224..e989664eee 100644
+--- a/buildscripts/idl/idl/cpp_types.py
++++ b/buildscripts/idl/idl/cpp_types.py
+@@ -28,6 +28,7 @@ from . import writer
+ 
+ _STD_ARRAY_UINT8_16 = 'std::array<std::uint8_t,16>'
+ 
++ABC = ABCMeta(str('ABC'), (object,), {'__slots__': ()})
+ 
+ def is_primitive_scalar_type(cpp_type):
+     # type: (unicode) -> bool
+@@ -75,11 +76,9 @@ def _qualify_array_type(cpp_type):
+     return "std::vector<%s>" % (cpp_type)
+ 
+ 
+-class CppTypeBase(object):
++class CppTypeBase(ABC):
+     """Base type for C++ Type information."""
+ 
+-    __metaclass__ = ABCMeta
+-
+     def __init__(self, field):
+         # type: (ast.Field) -> None
+         """Construct a CppTypeBase."""
+@@ -537,11 +536,9 @@ def get_cpp_type(field):
+     return cpp_type_info
+ 
+ 
+-class BsonCppTypeBase(object):
++class BsonCppTypeBase(ABC):
+     """Base type for custom C++ support for BSON Types information."""
+ 
+-    __metaclass__ = ABCMeta
+-
+     def __init__(self, field):
+         # type: (ast.Field) -> None
+         """Construct a BsonCppTypeBase."""
+diff --git a/buildscripts/idl/idl/enum_types.py b/buildscripts/idl/idl/enum_types.py
+index 3caed6f67d..f17c926748 100644
+--- a/buildscripts/idl/idl/enum_types.py
++++ b/buildscripts/idl/idl/enum_types.py
+@@ -29,11 +29,11 @@ from . import common
+ from . import syntax
+ from . import writer
+ 
++ABC = ABCMeta(str('ABC'), (object,), {'__slots__': ()})
+ 
+-class EnumTypeInfoBase(object):
+-    """Base type for enumeration type information."""
+ 
+-    __metaclass__ = ABCMeta
++class EnumTypeInfoBase(ABC):
++    """Base type for enumeration type information."""
+ 
+     def __init__(self, idl_enum):
+         # type: (Union[syntax.Enum,ast.Enum]) -> None
+@@ -108,8 +108,6 @@ class EnumTypeInfoBase(object):
+ class _EnumTypeInt(EnumTypeInfoBase):
+     """Type information for integer enumerations."""
+ 
+-    __metaclass__ = ABCMeta
+-
+     def __init__(self, idl_enum):
+         # type: (Union[syntax.Enum,ast.Enum]) -> None
+         super(_EnumTypeInt, self).__init__(idl_enum)
+@@ -189,8 +187,6 @@ def _get_constant_enum_name(idl_enum, enum_value):
+ class _EnumTypeString(EnumTypeInfoBase):
+     """Type information for string enumerations."""
+ 
+-    __metaclass__ = ABCMeta
+-
+     def __init__(self, idl_enum):
+         # type: (Union[syntax.Enum,ast.Enum]) -> None
+         super(_EnumTypeString, self).__init__(idl_enum)
+diff --git a/buildscripts/idl/idl/generator.py b/buildscripts/idl/idl/generator.py
+index 9f591eccc4..8f97abf28c 100644
+--- a/buildscripts/idl/idl/generator.py
++++ b/buildscripts/idl/idl/generator.py
+@@ -33,6 +33,7 @@ from . import enum_types
+ from . import struct_types
+ from . import writer
+ 
++ABC = ABCMeta(str('ABC'), (object,), {'__slots__': ()})
+ 
+ def _get_field_member_name(field):
+     # type: (ast.Field) -> unicode
+@@ -105,11 +106,9 @@ def _get_bson_type_check(bson_element, ctxt_name, field):
+         return '%s.checkAndAssertTypes(%s, %s)' % (ctxt_name, bson_element, type_list)
+ 
+ 
+-class _FieldUsageCheckerBase(object):
++class _FieldUsageCheckerBase(ABC):
+     """Check for duplicate fields, and required fields as needed."""
+ 
+-    __metaclass__ = ABCMeta
+-
+     def __init__(self, indented_writer):
+         # type: (writer.IndentedTextWriter) -> None
+         """Create a field usage checker."""
+@@ -1470,8 +1469,8 @@ def _generate_header(spec, file_name):
+     header.generate(spec)
+ 
+     # Generate structs
+-    with io.open(file_name, mode='wb') as file_handle:
+-        file_handle.write(stream.getvalue().encode())
++    with io.open(file_name, mode='w') as file_handle:
++        file_handle.write(stream.getvalue())
+ 
+ 
+ def _generate_source(spec, file_name, header_file_name):
+@@ -1485,8 +1484,8 @@ def _generate_source(spec, file_name, header_file_name):
+     source.generate(spec, header_file_name)
+ 
+     # Generate structs
+-    with io.open(file_name, mode='wb') as file_handle:
+-        file_handle.write(stream.getvalue().encode())
++    with io.open(file_name, mode='w') as file_handle:
++        file_handle.write(stream.getvalue())
+ 
+ 
+ def generate_code(spec, output_base_dir, header_file_name, source_file_name):
+diff --git a/buildscripts/idl/idl/parser.py b/buildscripts/idl/idl/parser.py
+index fd0af9b144..ac36a3a280 100644
+--- a/buildscripts/idl/idl/parser.py
++++ b/buildscripts/idl/idl/parser.py
+@@ -30,6 +30,7 @@ from . import common
+ from . import errors
+ from . import syntax
+ 
++ABC = ABCMeta(str('ABC'), (object,), {'__slots__': ()})
+ 
+ class _RuleDesc(object):
+     """
+@@ -486,11 +487,9 @@ def _parse(stream, error_file_name):
+         return syntax.IDLParsedSpec(spec, None)
+ 
+ 
+-class ImportResolverBase(object):
++class ImportResolverBase(ABC):
+     """Base class for resolving imported files."""
+ 
+-    __metaclass__ = ABCMeta
+-
+     def __init__(self):
+         # type: () -> None
+         """Construct a ImportResolver."""
+diff --git a/buildscripts/idl/idl/struct_types.py b/buildscripts/idl/idl/struct_types.py
+index 9e2a9504ac..cd46e7c0ff 100644
+--- a/buildscripts/idl/idl/struct_types.py
++++ b/buildscripts/idl/idl/struct_types.py
+@@ -23,6 +23,7 @@ from . import ast
+ from . import common
+ from . import writer
+ 
++ABC = ABCMeta(str('ABC'), (object,), {'__slots__': ()})
+ 
+ class ArgumentInfo(object):
+     """Class that encapsulates information about an argument to a method."""
+@@ -125,11 +126,9 @@ class MethodInfo(object):
+             "${method_name}(${args});", method_name=self.method_name, args=args)
+ 
+ 
+-class StructTypeInfoBase(object):
++class StructTypeInfoBase(ABC):
+     """Base class for struct and command code generation."""
+ 
+-    __metaclass__ = ABCMeta
+-
+     @abstractmethod
+     def get_constructor_method(self):
+         # type: () -> MethodInfo
+diff --git a/buildscripts/idl/idl/syntax.py b/buildscripts/idl/idl/syntax.py
+index 056d2e9dc3..ff9a3953db 100644
+--- a/buildscripts/idl/idl/syntax.py
++++ b/buildscripts/idl/idl/syntax.py
+@@ -82,7 +82,7 @@ def _item_and_type(dic):
+     # type: (Dict[Any, List[Any]]) -> Iterator[Tuple[Any, Any]]
+     """Return an Iterator of (key, value) pairs from a dictionary."""
+     return itertools.chain.from_iterable((_zip_scalar(value, key)
+-                                          for (key, value) in dic.viewitems()))
++                                          for (key, value) in dic.items()))
+ 
+ 
+ class SymbolTable(object):
+diff --git a/buildscripts/idl/tests/test_binder.py b/buildscripts/idl/tests/test_binder.py
+index 5502b69d36..b0f4ba4269 100644
+--- a/buildscripts/idl/tests/test_binder.py
++++ b/buildscripts/idl/tests/test_binder.py
+@@ -72,7 +72,7 @@ class TestBinder(testcase.IDLTestcase):
+             cpp_includes:
+                 - 'bar'
+                 - 'foo'"""))
+-        self.assertEquals(spec.globals.cpp_namespace, "something")
++        self.assertEqual(spec.globals.cpp_namespace, "something")
+         self.assertListEqual(spec.globals.cpp_includes, ['bar', 'foo'])
+ 
+     def test_type_positive(self):
+diff --git a/buildscripts/lint.py b/buildscripts/lint.py
+index d4061a9b04..b1ca5b6169 100644
+--- a/buildscripts/lint.py
++++ b/buildscripts/lint.py
+@@ -2,8 +2,8 @@
+ import sys
+ import codecs
+ 
+-import cpplint
+-import utils
++from . import cpplint
++from . import utils
+ 
+ class CheckForConfigH:
+     def __init__(self):
+diff --git a/buildscripts/linter/base.py b/buildscripts/linter/base.py
+index ae78d52066..7988876c98 100644
+--- a/buildscripts/linter/base.py
++++ b/buildscripts/linter/base.py
+@@ -5,12 +5,11 @@ from __future__ import print_function
+ from abc import ABCMeta, abstractmethod
+ from typing import Dict, List, Optional
+ 
++ABC = ABCMeta(str('ABC'), (object,), {'__slots__': ()})
+ 
+-class LinterBase(object):
++class LinterBase(ABC):
+     """Base Class for all linters."""
+ 
+-    __metaclass__ = ABCMeta
+-
+     def __init__(self, cmd_name, required_version):
+         # type: (str, str) -> None
+         """
+diff --git a/buildscripts/linter/git.py b/buildscripts/linter/git.py
+index edde6d0a49..4680e2f5fd 100644
+--- a/buildscripts/linter/git.py
++++ b/buildscripts/linter/git.py
+@@ -175,7 +175,7 @@ def get_files_to_check_from_patch(patches, filter_function):
+ 
+     lines = []  # type: List[str]
+     for patch in patches:
+-        with open(patch, "rb") as infile:
++        with open(patch, "r") as infile:
+             lines += infile.readlines()
+ 
+     candidates = [check.match(line).group(1) for line in lines if check.match(line)]
+diff --git a/buildscripts/linter/parallel.py b/buildscripts/linter/parallel.py
+index 0648bfb16e..361da0c559 100644
+--- a/buildscripts/linter/parallel.py
++++ b/buildscripts/linter/parallel.py
+@@ -2,7 +2,12 @@
+ from __future__ import absolute_import
+ from __future__ import print_function
+ 
+-import Queue
++try:
++  import queue
++except ImportError:
++  #Python 2
++  import Queue as queue
++
+ import threading
+ import time
+ from multiprocessing import cpu_count
+@@ -17,7 +22,7 @@ def parallel_process(items, func):
+     except NotImplementedError:
+         cpus = 1
+ 
+-    task_queue = Queue.Queue()  # type: Queue.Queue
++    task_queue = queue.Queue()  # type: queue.Queue
+ 
+     # Use a list so that worker function will capture this variable
+     pp_event = threading.Event()
+@@ -30,7 +35,7 @@ def parallel_process(items, func):
+         while not pp_event.is_set():
+             try:
+                 item = task_queue.get_nowait()
+-            except Queue.Empty:
++            except queue.Empty:
+                 # if the queue is empty, exit the worker thread
+                 pp_event.set()
+                 return
+diff --git a/buildscripts/resmokeconfig/loggers/__init__.py b/buildscripts/resmokeconfig/loggers/__init__.py
+index 6511d49636..454f675ca2 100644
+--- a/buildscripts/resmokeconfig/loggers/__init__.py
++++ b/buildscripts/resmokeconfig/loggers/__init__.py
+@@ -21,7 +21,7 @@ def _get_named_loggers():
+     named_loggers = {}
+ 
+     try:
+-        (root, _dirs, files) = os.walk(dirname).next()
++        (root, _dirs, files) = next(os.walk(dirname))
+         for filename in files:
+             (short_name, ext) = os.path.splitext(filename)
+             if ext in (".yml", ".yaml"):
+diff --git a/buildscripts/resmokeconfig/suites/__init__.py b/buildscripts/resmokeconfig/suites/__init__.py
+index e075dd22e0..2ca2187e6e 100644
+--- a/buildscripts/resmokeconfig/suites/__init__.py
++++ b/buildscripts/resmokeconfig/suites/__init__.py
+@@ -21,7 +21,7 @@ def _get_named_suites():
+     named_suites = {}
+ 
+     try:
+-        (root, _dirs, files) = os.walk(dirname).next()
++        (root, _dirs, files) = next(os.walk(dirname))
+         for filename in files:
+             (short_name, ext) = os.path.splitext(filename)
+             if ext in (".yml", ".yaml"):
+diff --git a/buildscripts/resmokelib/config.py b/buildscripts/resmokelib/config.py
+index 1dcd7d7793..8a15651b4a 100644
+--- a/buildscripts/resmokelib/config.py
++++ b/buildscripts/resmokelib/config.py
+@@ -58,7 +58,7 @@ DEFAULTS = {
+     "repeat": 1,
+     "reportFailureStatus": "fail",
+     "reportFile": None,
+-    "seed": long(time.time() * 256),  # Taken from random.py code in Python 2.7.
++    "seed": int(time.time() * 256),  # Taken from random.py code in Python 2.7.
+     "serviceExecutor": None,
+     "shellReadMode": None,
+     "shellWriteMode": None,
+diff --git a/buildscripts/resmokelib/core/process.py b/buildscripts/resmokelib/core/process.py
+index 03fb849616..e70f90abb4 100644
+--- a/buildscripts/resmokelib/core/process.py
++++ b/buildscripts/resmokelib/core/process.py
+@@ -196,8 +196,8 @@ class Process(object):
+                 finally:
+                     win32api.CloseHandle(mongo_signal_handle)
+ 
+-                print "Failed to cleanly exit the program, calling TerminateProcess() on PID: " +\
+-                    str(self._process.pid)
++                print("Failed to cleanly exit the program, calling TerminateProcess() on PID: " +\
++                    str(self._process.pid))
+ 
+             # Adapted from implementation of Popen.terminate() in subprocess.py of Python 2.7
+             # because earlier versions do not catch exceptions.
+diff --git a/buildscripts/resmokelib/logging/buildlogger.py b/buildscripts/resmokelib/logging/buildlogger.py
+index 01bba20202..044855cad0 100644
+--- a/buildscripts/resmokelib/logging/buildlogger.py
++++ b/buildscripts/resmokelib/logging/buildlogger.py
+@@ -267,7 +267,7 @@ class BuildloggerServer(object):
+     def __init__(self):
+         tmp_globals = {}
+         self.config = {}
+-        execfile(_BUILDLOGGER_CONFIG, tmp_globals, self.config)
++        exec(compile(open(_BUILDLOGGER_CONFIG).read(), _BUILDLOGGER_CONFIG, 'exec'), tmp_globals, self.config)
+ 
+         # Rename "slavename" to "username" if present.
+         if "slavename" in self.config and "username" not in self.config:
+diff --git a/buildscripts/resmokelib/selector.py b/buildscripts/resmokelib/selector.py
+index 3fff181c18..4395c3b2cf 100644
+--- a/buildscripts/resmokelib/selector.py
++++ b/buildscripts/resmokelib/selector.py
+@@ -66,7 +66,7 @@ class TestFileExplorer(object):
+             A list of paths as a list(str).
+         """
+         tests = []
+-        with open(root_file_path, "rb") as filep:
++        with open(root_file_path, "r") as filep:
+             for test_path in filep:
+                 test_path = test_path.strip()
+                 tests.append(test_path)
+@@ -294,7 +294,7 @@ def make_expression(conf):
+     elif isinstance(conf, dict):
+         if len(conf) != 1:
+             raise ValueError("Tag matching expressions should only contain one key")
+-        key = conf.keys()[0]
++        key = next(iter(conf.keys()))
+         value = conf[key]
+         if key == "$allOf":
+             return _AllOfExpression(_make_expression_list(value))
+diff --git a/buildscripts/resmokelib/testing/executor.py b/buildscripts/resmokelib/testing/executor.py
+index 9574111904..d92209a7b1 100644
+--- a/buildscripts/resmokelib/testing/executor.py
++++ b/buildscripts/resmokelib/testing/executor.py
+@@ -64,7 +64,7 @@ class TestSuiteExecutor(object):
+             jobs_to_start = num_tests
+ 
+         # Must be done after getting buildlogger configuration.
+-        self._jobs = [self._make_job(job_num) for job_num in xrange(jobs_to_start)]
++        self._jobs = [self._make_job(job_num) for job_num in range(jobs_to_start)]
+ 
+     def run(self):
+         """
+@@ -290,7 +290,7 @@ class TestSuiteExecutor(object):
+             queue.put(test_case)
+ 
+         # Add sentinel value for each job to indicate when there are no more items to process.
+-        for _ in xrange(len(self._jobs)):
++        for _ in range(len(self._jobs)):
+             queue.put(None)
+ 
+         return queue
+diff --git a/buildscripts/resmokelib/testing/fixtures/interface.py b/buildscripts/resmokelib/testing/fixtures/interface.py
+index 6dffa24e43..dfeeb1326d 100644
+--- a/buildscripts/resmokelib/testing/fixtures/interface.py
++++ b/buildscripts/resmokelib/testing/fixtures/interface.py
+@@ -4,6 +4,7 @@ Interface of the different fixtures for executing JSTests against.
+ 
+ from __future__ import absolute_import
+ 
++import six
+ import time
+ 
+ import pymongo
+@@ -27,13 +28,11 @@ def make_fixture(class_name, *args, **kwargs):
+     return _FIXTURES[class_name](*args, **kwargs)
+ 
+ 
+-class Fixture(object):
++class Fixture(six.with_metaclass(registry.make_registry_metaclass(_FIXTURES), object)):
+     """
+     Base class for all fixtures.
+     """
+ 
+-    __metaclass__ = registry.make_registry_metaclass(_FIXTURES)
+-
+     # We explicitly set the 'REGISTERED_NAME' attribute so that PyLint realizes that the attribute
+     # is defined for all subclasses of Fixture.
+     REGISTERED_NAME = "Fixture"
+diff --git a/buildscripts/resmokelib/testing/fixtures/replicaset.py b/buildscripts/resmokelib/testing/fixtures/replicaset.py
+index 5274ffb4c4..49675bd5e9 100644
+--- a/buildscripts/resmokelib/testing/fixtures/replicaset.py
++++ b/buildscripts/resmokelib/testing/fixtures/replicaset.py
+@@ -87,7 +87,7 @@ class ReplicaSetFixture(interface.ReplFixture):
+         self.replset_name = self.mongod_options.get("replSet", "rs")
+ 
+         if not self.nodes:
+-            for i in xrange(self.num_nodes):
++            for i in range(self.num_nodes):
+                 node = self._new_mongod(i, self.replset_name)
+                 self.nodes.append(node)
+ 
+diff --git a/buildscripts/resmokelib/testing/fixtures/shardedcluster.py b/buildscripts/resmokelib/testing/fixtures/shardedcluster.py
+index 06e84c213b..47ba407a51 100644
+--- a/buildscripts/resmokelib/testing/fixtures/shardedcluster.py
++++ b/buildscripts/resmokelib/testing/fixtures/shardedcluster.py
+@@ -85,7 +85,7 @@ class ShardedClusterFixture(interface.Fixture):
+             self.configsvr.setup()
+ 
+         if not self.shards:
+-            for i in xrange(self.num_shards):
++            for i in range(self.num_shards):
+                 if self.num_rs_nodes_per_shard is None:
+                     shard = self._new_standalone_shard(i)
+                 elif isinstance(self.num_rs_nodes_per_shard, int):
+diff --git a/buildscripts/resmokelib/testing/hooks/interface.py b/buildscripts/resmokelib/testing/hooks/interface.py
+index cd5200764f..958cc92192 100644
+--- a/buildscripts/resmokelib/testing/hooks/interface.py
++++ b/buildscripts/resmokelib/testing/hooks/interface.py
+@@ -7,6 +7,7 @@ from __future__ import absolute_import
+ from ...logging import loggers
+ from ...utils import registry
+ 
++import six
+ 
+ _HOOKS = {}
+ 
+@@ -22,13 +23,11 @@ def make_custom_behavior(class_name, *args, **kwargs):
+     return _HOOKS[class_name](*args, **kwargs)
+ 
+ 
+-class CustomBehavior(object):
++class CustomBehavior(six.with_metaclass(registry.make_registry_metaclass(_HOOKS), object)):
+     """
+     The common interface all CustomBehaviors will inherit from.
+     """
+ 
+-    __metaclass__ = registry.make_registry_metaclass(_HOOKS)
+-
+     REGISTERED_NAME = registry.LEAVE_UNREGISTERED
+ 
+     @staticmethod
+diff --git a/buildscripts/resmokelib/testing/suite.py b/buildscripts/resmokelib/testing/suite.py
+index 132a2d70d9..07262d194a 100644
+--- a/buildscripts/resmokelib/testing/suite.py
++++ b/buildscripts/resmokelib/testing/suite.py
+@@ -262,7 +262,7 @@ class Suite(object):
+         sb.append("Executed %d times in %0.2f seconds:" % (num_iterations, total_time_taken))
+ 
+         combined_summary = _summary.Summary(0, 0.0, 0, 0, 0, 0)
+-        for iteration in xrange(num_iterations):
++        for iteration in range(num_iterations):
+             # Summarize each execution as a bulleted list of results.
+             bulleter_sb = []
+             summary = self._summarize_report(
+diff --git a/buildscripts/resmokelib/testing/summary.py b/buildscripts/resmokelib/testing/summary.py
+index bb44472caa..54da2181d5 100644
+--- a/buildscripts/resmokelib/testing/summary.py
++++ b/buildscripts/resmokelib/testing/summary.py
+@@ -17,6 +17,6 @@ def combine(summary1, summary2):
+     Returns a summary representing the sum of 'summary1' and 'summary2'.
+     """
+     args = []
+-    for i in xrange(len(Summary._fields)):
++    for i in range(len(Summary._fields)):
+         args.append(summary1[i] + summary2[i])
+     return Summary._make(args)
+diff --git a/buildscripts/resmokelib/testing/testcases/interface.py b/buildscripts/resmokelib/testing/testcases/interface.py
+index be7f14afd5..f736bd5c36 100644
+--- a/buildscripts/resmokelib/testing/testcases/interface.py
++++ b/buildscripts/resmokelib/testing/testcases/interface.py
+@@ -7,6 +7,7 @@ from __future__ import absolute_import
+ 
+ import os
+ import os.path
++import six
+ import unittest
+ 
+ from ... import config
+@@ -27,13 +28,11 @@ def make_test_case(test_kind, *args, **kwargs):
+     return _TEST_CASES[test_kind](*args, **kwargs)
+ 
+ 
+-class TestCase(unittest.TestCase):
++class TestCase(six.with_metaclass(registry.make_registry_metaclass(_TEST_CASES), unittest.TestCase)):
+     """
+     A test case to execute.
+     """
+ 
+-    __metaclass__ = registry.make_registry_metaclass(_TEST_CASES)
+-
+     REGISTERED_NAME = registry.LEAVE_UNREGISTERED
+ 
+     def __init__(self, logger, test_kind, test_name):
+@@ -46,10 +45,10 @@ class TestCase(unittest.TestCase):
+         if not isinstance(logger, logging.Logger):
+             raise TypeError("logger must be a Logger instance")
+ 
+-        if not isinstance(test_kind, basestring):
++        if not isinstance(test_kind, str):
+             raise TypeError("test_kind must be a string")
+ 
+-        if not isinstance(test_name, basestring):
++        if not isinstance(test_name, str):
+             raise TypeError("test_name must be a string")
+ 
+         # When the TestCase is created by the TestSuiteExecutor (through a call to make_test_case())
+diff --git a/buildscripts/resmokelib/testing/testcases/jstest.py b/buildscripts/resmokelib/testing/testcases/jstest.py
+index adb28285f0..528a9747a9 100644
+--- a/buildscripts/resmokelib/testing/testcases/jstest.py
++++ b/buildscripts/resmokelib/testing/testcases/jstest.py
+@@ -235,7 +235,7 @@ class JSTestCase(interface.TestCase):
+         test_cases = []
+         try:
+             # If there are multiple clients, make a new thread for each client.
+-            for thread_id in xrange(self.num_clients):
++            for thread_id in range(self.num_clients):
+                 logger = self.logger.new_test_thread_logger(self.test_kind, str(thread_id))
+                 test_case = self._create_test_case_for_thread(logger, thread_id)
+                 test_cases.append(test_case)
+diff --git a/buildscripts/resmokelib/utils/__init__.py b/buildscripts/resmokelib/utils/__init__.py
+index fa782f3430..3ce73c9b64 100644
+--- a/buildscripts/resmokelib/utils/__init__.py
++++ b/buildscripts/resmokelib/utils/__init__.py
+@@ -43,14 +43,14 @@ def is_string_list(lst):
+     """
+     Returns true if 'lst' is a list of strings, and false otherwise.
+     """
+-    return isinstance(lst, list) and all(isinstance(x, basestring) for x in lst)
++    return isinstance(lst, list) and all(isinstance(x, str) for x in lst)
+ 
+ 
+ def is_string_set(value):
+     """
+     Returns true if 'value' is a set of strings, and false otherwise.
+     """
+-    return isinstance(value, set) and all(isinstance(x, basestring) for x in value)
++    return isinstance(value, set) and all(isinstance(x, str) for x in value)
+ 
+ 
+ def is_js_file(filename):
+diff --git a/buildscripts/resmokelib/utils/globstar.py b/buildscripts/resmokelib/utils/globstar.py
+index 644ebfe3e3..52100d7d9d 100644
+--- a/buildscripts/resmokelib/utils/globstar.py
++++ b/buildscripts/resmokelib/utils/globstar.py
+@@ -145,7 +145,7 @@ def _list_dir(pathname):
+     """
+ 
+     try:
+-        (_root, dirs, files) = os.walk(pathname).next()
++        (_root, dirs, files) = next(os.walk(pathname))
+         return (dirs, files)
+     except StopIteration:
+         return None  # 'pathname' directory does not exist
+diff --git a/buildscripts/resmokelib/utils/jscomment.py b/buildscripts/resmokelib/utils/jscomment.py
+index 18da788582..a393c43723 100644
+--- a/buildscripts/resmokelib/utils/jscomment.py
++++ b/buildscripts/resmokelib/utils/jscomment.py
+@@ -39,7 +39,7 @@ def get_tags(pathname):
+                 # TODO: it might be worth supporting the block (indented) style of YAML lists in
+                 #       addition to the flow (bracketed) style
+                 tags = yaml.safe_load(_strip_jscomments(match.group(1)))
+-                if not isinstance(tags, list) and all(isinstance(tag, basestring) for tag in tags):
++                if not isinstance(tags, list) and all(isinstance(tag, str) for tag in tags):
+                     raise TypeError("Expected a list of string tags, but got '%s'" % (tags))
+                 return tags
+             except yaml.YAMLError as err:
+diff --git a/buildscripts/resmokelib/utils/queue.py b/buildscripts/resmokelib/utils/queue.py
+index 80da5e2cc6..41d23d54bf 100644
+--- a/buildscripts/resmokelib/utils/queue.py
++++ b/buildscripts/resmokelib/utils/queue.py
+@@ -9,15 +9,20 @@ See https://bugs.python.org/issue1167930 for more details.
+ 
+ from __future__ import absolute_import
+ 
+-import Queue
++try:
++  import queue
++except ImportError:
++  #Python 2
++  import Queue as queue
++
+ import time
+ 
+ 
+ # Exception that is raised when get_nowait() is called on an empty Queue.
+-Empty = Queue.Empty
++Empty = queue.Empty
+ 
+ 
+-class Queue(Queue.Queue):
++class Queue(queue.Queue):
+     """
+     A multi-producer, multi-consumer queue.
+     """
+diff --git a/buildscripts/utils.py b/buildscripts/utils.py
+index 69a78921ca..93c697adca 100644
+--- a/buildscripts/utils.py
++++ b/buildscripts/utils.py
+@@ -122,7 +122,7 @@ def getprocesslist():
+     raw = ""
+     try:
+         raw = execsys( "/bin/ps axww" )[0]
+-    except Exception,e:
++    except Exception as e:
+         print( "can't get processlist: " + str( e ) )
+ 
+     r = re.compile( "[\r\n]+" )
+@@ -145,7 +145,7 @@ def choosePathExist( choices , default=None):
+     return default
+ 
+ def filterExists(paths):
+-    return filter(os.path.exists, paths)
++    return list(filter(os.path.exists, paths))
+ 
+ def ensureDir( name ):
+     d = os.path.dirname( name )
+@@ -176,7 +176,7 @@ def didMongodStart( port=27017 , timeout=20 ):
+         try:
+             checkMongoPort( port )
+             return True
+-        except Exception,e:
++        except Exception as e:
+             print( e )
+             timeout = timeout - 1
+     return False
+@@ -213,7 +213,7 @@ def find_python(min_version=(2, 5)):
+         pass
+ 
+     version = re.compile(r'[Pp]ython ([\d\.]+)', re.MULTILINE)
+-    binaries = ('python27', 'python2.7', 'python26', 'python2.6', 'python25', 'python2.5', 'python')
++    binaries = ('python3', 'python27', 'python2.7', 'python26', 'python2.6', 'python25', 'python2.5', 'python')
+     for binary in binaries:
+         try:
+             out, err = subprocess.Popen([binary, '-V'], stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
+@@ -251,7 +251,7 @@ def run_smoke_command(*args):
+ # at the position they occurred
+ def replace_with_repr(unicode_error):
+     offender = unicode_error.object[unicode_error.start:unicode_error.end]
+-    return (unicode(repr(offender).strip("'").strip('"')), unicode_error.end)
++    return (str(repr(offender).strip("'").strip('"')), unicode_error.end)
+ 
+ codecs.register_error('repr', replace_with_repr)
+ 
+diff --git a/site_scons/libdeps.py b/site_scons/libdeps.py
+index 632ed29be5..1641c3ba90 100644
+--- a/site_scons/libdeps.py
++++ b/site_scons/libdeps.py
+@@ -122,7 +122,7 @@ def __get_libdeps(node):
+                 marked.add(n.target_node)
+                 tsorted.append(n.target_node)
+ 
+-            except DependencyCycleError, e:
++            except DependencyCycleError as e:
+                 if len(e.cycle_nodes) == 1 or e.cycle_nodes[0] != e.cycle_nodes[-1]:
+                     e.cycle_nodes.insert(0, n.target_node)
+                 raise
+@@ -150,7 +150,7 @@ def __get_syslibdeps(node):
+         for lib in __get_libdeps(node):
+             for syslib in node.get_env().Flatten(lib.get_env().get(syslibdeps_env_var, [])):
+                 if syslib:
+-                    if type(syslib) in (str, unicode) and syslib.startswith(missing_syslibdep):
++                    if type(syslib) in (str, str) and syslib.startswith(missing_syslibdep):
+                         print("Target '%s' depends on the availability of a "
+                               "system provided library for '%s', "
+                               "but no suitable library was found during configuration." %
+@@ -209,7 +209,7 @@ def get_syslibdeps(source, target, env, for_signature):
+         # they're believed to represent library short names, that should be prefixed with -l
+         # or the compiler-specific equivalent.  I.e., 'm' becomes '-lm', but 'File("m.a") is passed
+         # through whole cloth.
+-        if type(d) in (str, unicode):
++        if type(d) in (str, str):
+             result.append('%s%s%s' % (lib_link_prefix, d, lib_link_suffix))
+         else:
+             result.append(d)
+diff --git a/site_scons/mongo/__init__.py b/site_scons/mongo/__init__.py
+index 510bd7bcc2..f77478092b 100644
+--- a/site_scons/mongo/__init__.py
++++ b/site_scons/mongo/__init__.py
+@@ -5,4 +5,4 @@
+ def print_build_failures():
+     from SCons.Script import GetBuildFailures
+     for bf in GetBuildFailures():
+-        print "%s failed: %s" % (bf.node, bf.errstr)
++        print("%s failed: %s" % (bf.node, bf.errstr))
+diff --git a/site_scons/mongo/generators.py b/site_scons/mongo/generators.py
+index c07e86a4d1..5958e6923b 100644
+--- a/site_scons/mongo/generators.py
++++ b/site_scons/mongo/generators.py
+@@ -1,6 +1,6 @@
+ # -*- mode: python; -*-
+ 
+-import md5
++import hashlib
+ 
+ # Default and alternative generator definitions go here.
+ 
+@@ -44,7 +44,7 @@ def default_variant_dir_generator(target, source, env, for_signature):
+ 
+     # Hash the named options and their values, and take the first 8 characters of the hash as
+     # the variant name
+-    hasher = md5.md5()
++    hasher = hashlib.md5()
+     for option in variant_options:
+         hasher.update(option)
+         hasher.update(str(env.GetOption(option)))
+diff --git a/site_scons/site_tools/dagger/__init__.py b/site_scons/site_tools/dagger/__init__.py
+index f05228cfe4..f10b4027e1 100644
+--- a/site_scons/site_tools/dagger/__init__.py
++++ b/site_scons/site_tools/dagger/__init__.py
+@@ -5,7 +5,7 @@ import logging
+ 
+ import SCons
+ 
+-import dagger
++from . import dagger
+ 
+ def generate(env, **kwargs):
+     """The entry point for our tool. However, the builder for
+diff --git a/site_scons/site_tools/dagger/dagger.py b/site_scons/site_tools/dagger/dagger.py
+index 1eeefe1ea3..03e7603d29 100644
+--- a/site_scons/site_tools/dagger/dagger.py
++++ b/site_scons/site_tools/dagger/dagger.py
+@@ -40,8 +40,8 @@ import sys
+ 
+ import SCons
+ 
+-import graph
+-import graph_consts
++from . import graph
++from . import graph_consts
+ 
+ 
+ LIB_DB = [] # Stores every SCons library nodes
+@@ -269,7 +269,7 @@ def write_obj_db(target, source, env):
+     for obj in OBJ_DB:
+         __generate_file_rels(obj, g)
+ 
+-    for exe in EXE_DB.keys():
++    for exe in list(EXE_DB.keys()):
+         __generate_exe_rels(exe, g)
+ 
+     # target is given as a list of target SCons nodes - this builder is only responsible for
+diff --git a/site_scons/site_tools/dagger/graph.py b/site_scons/site_tools/dagger/graph.py
+index 5ebe6f4506..379d5245e6 100644
+--- a/site_scons/site_tools/dagger/graph.py
++++ b/site_scons/site_tools/dagger/graph.py
+@@ -4,11 +4,13 @@ import abc
+ import json
+ import copy
+ 
+-import graph_consts
++from . import graph_consts
+ 
+ if sys.version_info >= (3, 0):
+     basestring = str
+ 
++ABC = abc.ABCMeta('ABC', (object,), {'__slots__': ()})
++
+ class Graph(object):
+     """Graph class for storing the build dependency graph. The graph stores the
+     directed edges as a nested dict of { RelationshipType: {From_Node: Set of
+@@ -141,7 +143,7 @@ class Graph(object):
+             node_dict["id"] = id
+             node_dict["node"] = {}
+ 
+-            for property, value in vars(node).iteritems():
++            for property, value in vars(node).items():
+                 if isinstance(value, set):
+                     node_dict["node"][property] = list(value)
+                 else:
+@@ -170,10 +172,9 @@ class Graph(object):
+                 sum(len(x) for x in self._edges.values()), hash(self))
+ 
+ 
+-class NodeInterface(object):
++class NodeInterface(ABC):
+     """Abstract base class for all Node Objects - All nodes must have an id and name
+     """
+-    __metaclass__ = abc.ABCMeta
+ 
+     @abc.abstractproperty
+     def id(self):
+@@ -190,7 +191,7 @@ class NodeLib(NodeInterface):
+     def __init__(self, id, name, input=None):
+         if isinstance(input, dict):
+             should_fail = False
+-            for k, v in input.iteritems():
++            for k, v in input.items():
+                 try:
+                     if isinstance(v, list):
+                         setattr(self, k, set(v))
+@@ -310,7 +311,7 @@ class NodeSymbol(NodeInterface):
+         if isinstance(input, dict):
+             should_fail = False
+ 
+-            for k, v in input.iteritems():
++            for k, v in input.items():
+                 try:
+                     if isinstance(v, list):
+                         setattr(self, k, set(v))
+@@ -435,7 +436,7 @@ class NodeFile(NodeInterface):
+     def __init__(self, id, name, input=None):
+         if isinstance(input, dict):
+             should_fail = False
+-            for k, v in input.iteritems():
++            for k, v in input.items():
+                 try:
+                     if isinstance(v, list):
+                         setattr(self, k, set(v))
+@@ -551,7 +552,7 @@ class NodeExe(NodeInterface):
+     def __init__(self, id, name, input=None):
+         if isinstance(input, dict):
+             should_fail = False
+-            for k, v in input.iteritems():
++            for k, v in input.items():
+                 try:
+                     if isinstance(v, list):
+                         setattr(self, k, set(v))
+diff --git a/site_scons/site_tools/dagger/graph_consts.py b/site_scons/site_tools/dagger/graph_consts.py
+index 81fe86d75c..a922a4f3f6 100644
+--- a/site_scons/site_tools/dagger/graph_consts.py
++++ b/site_scons/site_tools/dagger/graph_consts.py
+@@ -17,8 +17,8 @@ NODE_SYM = 2
+ NODE_FILE = 3
+ NODE_EXE = 4
+ 
+-RELATIONSHIP_TYPES = range(1, 9)
+-NODE_TYPES = range(1, 5)
++RELATIONSHIP_TYPES = list(range(1, 9))
++NODE_TYPES = list(range(1, 5))
+ 
+ 
+ """Error/query codes"""
+diff --git a/site_scons/site_tools/dagger/graph_test.py b/site_scons/site_tools/dagger/graph_test.py
+index bc84f5868c..6c0168cf97 100644
+--- a/site_scons/site_tools/dagger/graph_test.py
++++ b/site_scons/site_tools/dagger/graph_test.py
+@@ -5,8 +5,8 @@ from JSON
+ 
+ import json
+ import unittest
+-import graph
+-import graph_consts
++from . import graph
++from . import graph_consts
+ 
+ 
+ def generate_graph():
+@@ -122,15 +122,15 @@ class TestGraphMethods(unittest.TestCase, CustomAssertions):
+         node = graph.NodeLib("test_node", "test_node")
+         self.g._nodes = {"test_node": node}
+ 
+-        self.assertEquals(self.g.get_node("test_node"), node)
++        self.assertEqual(self.g.get_node("test_node"), node)
+ 
+-        self.assertEquals(self.g.get_node("missing_node"), None)
++        self.assertEqual(self.g.get_node("missing_node"), None)
+ 
+     def test_add_node(self):
+         node = graph.NodeLib("test_node", "test_node")
+         self.g.add_node(node)
+ 
+-        self.assertEquals(self.g.get_node("test_node"), node)
++        self.assertEqual(self.g.get_node("test_node"), node)
+ 
+         self.assertRaises(ValueError, self.g.add_node, node)
+ 
+@@ -153,16 +153,16 @@ class TestGraphMethods(unittest.TestCase, CustomAssertions):
+         self.g.add_edge(graph_consts.LIB_FIL, self.from_node_lib.id,
+                         self.to_node_file.id)
+ 
+-        self.assertEquals(self.g.edges[graph_consts.LIB_LIB][
++        self.assertEqual(self.g.edges[graph_consts.LIB_LIB][
+             self.from_node_lib.id], set([self.to_node_lib.id]))
+ 
+-        self.assertEquals(self.g.edges[graph_consts.LIB_SYM][
++        self.assertEqual(self.g.edges[graph_consts.LIB_SYM][
+             self.from_node_lib.id], set([self.to_node_sym.id]))
+ 
+-        self.assertEquals(self.g.edges[graph_consts.LIB_FIL][
++        self.assertEqual(self.g.edges[graph_consts.LIB_FIL][
+             self.from_node_lib.id], set([self.to_node_file.id]))
+ 
+-        self.assertEquals(self.to_node_lib.dependent_libs,
++        self.assertEqual(self.to_node_lib.dependent_libs,
+                           set([self.from_node_lib.id]))
+ 
+     def test_add_edge_files(self):
+@@ -173,14 +173,14 @@ class TestGraphMethods(unittest.TestCase, CustomAssertions):
+         self.g.add_edge(graph_consts.FIL_LIB, self.from_node_file.id,
+                         self.to_node_lib.id)
+ 
+-        self.assertEquals(self.g.edges[graph_consts.FIL_FIL][
++        self.assertEqual(self.g.edges[graph_consts.FIL_FIL][
+             self.from_node_file.id], set([self.to_node_file.id]))
+-        self.assertEquals(self.g.edges[graph_consts.FIL_SYM][
++        self.assertEqual(self.g.edges[graph_consts.FIL_SYM][
+             self.from_node_file.id], set([self.to_node_sym.id]))
+-        self.assertEquals(self.g.edges[graph_consts.FIL_LIB][
++        self.assertEqual(self.g.edges[graph_consts.FIL_LIB][
+             self.from_node_file.id], set([self.to_node_lib.id]))
+ 
+-        self.assertEquals(self.to_node_file.dependent_files,
++        self.assertEqual(self.to_node_file.dependent_files,
+                           set([self.from_node_file.id]))
+ 
+     def test_export_to_json(self):
+@@ -188,7 +188,7 @@ class TestGraphMethods(unittest.TestCase, CustomAssertions):
+         generated_graph.export_to_json("export_test.json")
+         generated = open("export_test.json", "r")
+         correct = open("test_graph.json", "r")
+-        self.assertEquals(json.load(generated), json.load(correct))
++        self.assertEqual(json.load(generated), json.load(correct))
+         generated.close()
+         correct.close()
+ 
+@@ -205,7 +205,7 @@ class TestGraphMethods(unittest.TestCase, CustomAssertions):
+             self.assertNodeEquals(
+                 graph_fromJSON.get_node(id), correct_graph.get_node(id))
+ 
+-        self.assertEquals(graph_fromJSON.edges, correct_graph.edges)
++        self.assertEqual(graph_fromJSON.edges, correct_graph.edges)
+ 
+ 
+ if __name__ == '__main__':
+diff --git a/site_scons/site_tools/distsrc.py b/site_scons/site_tools/distsrc.py
+index 861f5d9e2e..d2dff0b612 100644
+--- a/site_scons/site_tools/distsrc.py
++++ b/site_scons/site_tools/distsrc.py
+@@ -20,7 +20,7 @@ import shutil
+ import tarfile
+ import time
+ import zipfile
+-import StringIO
++import io
+ 
+ from distutils.spawn import find_executable
+ 
+@@ -82,7 +82,7 @@ class DistSrcTarArchive(DistSrcArchive):
+ 
+     def append_file_contents(self, filename, file_contents,
+             mtime=time.time(),
+-            mode=0644,
++            mode=0o644,
+             uname="root",
+             gname="root"):
+         file_metadata = tarfile.TarInfo(name=filename)
+@@ -91,7 +91,7 @@ class DistSrcTarArchive(DistSrcArchive):
+         file_metadata.uname = uname
+         file_metadata.gname = gname
+         file_metadata.size = len(file_contents)
+-        file_buf = StringIO.StringIO(file_contents)
++        file_buf = io.StringIO(file_contents)
+         if self.archive_mode == 'r':
+             self.archive_file.close()
+             self.archive_file = tarfile.open(
+@@ -119,7 +119,7 @@ class DistSrcZipArchive(DistSrcArchive):
+             name=key,
+             size=item_data.file_size,
+             mtime=time.mktime(fixed_time),
+-            mode=0775 if is_dir else 0664,
++            mode=0o775 if is_dir else 0o664,
+             type=tarfile.DIRTYPE if is_dir else tarfile.REGTYPE,
+             uid=0,
+             gid=0,
+@@ -129,7 +129,7 @@ class DistSrcZipArchive(DistSrcArchive):
+ 
+     def append_file_contents(self, filename, file_contents,
+             mtime=time.time(),
+-            mode=0644,
++            mode=0o644,
+             uname="root",
+             gname="root"):
+         self.archive_file.writestr(filename, file_contents)
+@@ -139,7 +139,7 @@ class DistSrcZipArchive(DistSrcArchive):
+ 
+ def build_error_action(msg):
+     def error_stub(target=None, source=None, env=None):
+-        print msg
++        print(msg)
+         env.Exit(1)
+     return [ error_stub ]
+ 
+@@ -162,7 +162,7 @@ def distsrc_action_generator(source, target, env, for_signature):
+ 
+     target_ext = str(target[0])[-3:]
+     if not target_ext in [ 'zip', 'tar' ]:
+-        print "Invalid file format for distsrc. Must be tar or zip file"
++        print("Invalid file format for distsrc. Must be tar or zip file")
+         env.Exit(1)
+ 
+     git_cmd = "\"%s\" archive --format %s --output %s --prefix ${MONGO_DIST_SRC_PREFIX} HEAD" % (
+diff --git a/site_scons/site_tools/icecream.py b/site_scons/site_tools/icecream.py
+index 9838b63349..fdf0c26030 100644
+--- a/site_scons/site_tools/icecream.py
++++ b/site_scons/site_tools/icecream.py
+@@ -99,7 +99,7 @@ def generate(env):
+     suffixes = _CSuffixes + _CXXSuffixes
+     for object_builder in SCons.Tool.createObjBuilders(env):
+         emitterdict = object_builder.builder.emitter
+-        for suffix in emitterdict.iterkeys():
++        for suffix in emitterdict.keys():
+             if not suffix in suffixes:
+                 continue
+             base = emitterdict[suffix]
+diff --git a/site_scons/site_tools/idl_tool.py b/site_scons/site_tools/idl_tool.py
+index 78bedfaa74..628f345361 100755
+--- a/site_scons/site_tools/idl_tool.py
++++ b/site_scons/site_tools/idl_tool.py
+@@ -47,7 +47,7 @@ def idl_scanner(node, env, path):
+ 
+     deps_list = deps_str.splitlines()
+ 
+-    nodes_deps_list = [ env.File(d) for d in deps_list]
++    nodes_deps_list = [ env.File(d.decode("utf-8")) for d in deps_list]
+     nodes_deps_list.extend(env.Glob('#buildscripts/idl/*.py'))
+     nodes_deps_list.extend(env.Glob('#buildscripts/idl/idl/*.py'))
+ 
+diff --git a/site_scons/site_tools/jstoh.py b/site_scons/site_tools/jstoh.py
+index dc90b324b2..567958a50f 100644
+--- a/site_scons/site_tools/jstoh.py
++++ b/site_scons/site_tools/jstoh.py
+@@ -1,3 +1,5 @@
++from __future__ import unicode_literals
++
+ import os
+ import sys
+ 
+@@ -39,8 +41,8 @@ def jsToHeader(target, source):
+ 
+     text = '\n'.join(h)
+ 
+-    print "writing: %s" % outFile
+-    with open(outFile, 'wb') as out:
++    print("writing: %s" % outFile)
++    with open(outFile, 'w') as out:
+         try:
+             out.write(text)
+         finally:
+@@ -49,7 +51,7 @@ def jsToHeader(target, source):
+ 
+ if __name__ == "__main__":
+     if len(sys.argv) < 3:
+-        print "Must specify [target] [source] "
++        print("Must specify [target] [source] ")
+         sys.exit(1)
+ 
+     jsToHeader(sys.argv[1], sys.argv[2:])
+diff --git a/site_scons/site_tools/mongo_integrationtest.py b/site_scons/site_tools/mongo_integrationtest.py
+index ff9a5f451b..fccbbebb47 100644
+--- a/site_scons/site_tools/mongo_integrationtest.py
++++ b/site_scons/site_tools/mongo_integrationtest.py
+@@ -12,10 +12,10 @@ def register_integration_test(env, test):
+     env.Alias('$INTEGRATION_TEST_ALIAS', installed_test)
+ 
+ def integration_test_list_builder_action(env, target, source):
+-    ofile = open(str(target[0]), 'wb')
++    ofile = open(str(target[0]), 'w')
+     try:
+         for s in _integration_tests:
+-            print '\t' + str(s)
++            print('\t' + str(s))
+             ofile.write('%s\n' % s)
+     finally:
+         ofile.close()
+diff --git a/site_scons/site_tools/mongo_unittest.py b/site_scons/site_tools/mongo_unittest.py
+index ec99ab2d45..a4185a6b41 100644
+--- a/site_scons/site_tools/mongo_unittest.py
++++ b/site_scons/site_tools/mongo_unittest.py
+@@ -11,10 +11,10 @@ def register_unit_test(env, test):
+     env.Alias('$UNITTEST_ALIAS', test)
+ 
+ def unit_test_list_builder_action(env, target, source):
+-    ofile = open(str(target[0]), 'wb')
++    ofile = open(str(target[0]), 'w')
+     try:
+         for s in _unittests:
+-            print '\t' + str(s)
++            print('\t' + str(s))
+             ofile.write('%s\n' % s)
+     finally:
+         ofile.close()
+diff --git a/site_scons/site_tools/split_dwarf.py b/site_scons/site_tools/split_dwarf.py
+index 95130c9e9a..c02d78619f 100644
+--- a/site_scons/site_tools/split_dwarf.py
++++ b/site_scons/site_tools/split_dwarf.py
+@@ -52,7 +52,7 @@ def generate(env):
+ 
+     for object_builder in SCons.Tool.createObjBuilders(env):
+         emitterdict = object_builder.builder.emitter
+-        for suffix in emitterdict.iterkeys():
++        for suffix in emitterdict.keys():
+             if not suffix in suffixes:
+                 continue
+             base = emitterdict[suffix]
+diff --git a/site_scons/site_tools/thin_archive.py b/site_scons/site_tools/thin_archive.py
+index 511c0ef6e5..0d8a83b83a 100644
+--- a/site_scons/site_tools/thin_archive.py
++++ b/site_scons/site_tools/thin_archive.py
+@@ -41,7 +41,7 @@ def exists(env):
+     for line in pipe.stdout:
+         if isgnu:
+             continue  # consume all data
+-        isgnu = re.search(r'^GNU ar', line)
++        isgnu = re.search(b'^GNU ar', line)
+ 
+     return bool(isgnu)
+ 
+diff --git a/site_scons/site_tools/xcode.py b/site_scons/site_tools/xcode.py
+index 9ec68c3547..5ddebb2e00 100644
+--- a/site_scons/site_tools/xcode.py
++++ b/site_scons/site_tools/xcode.py
+@@ -9,4 +9,4 @@ def generate(env):
+ 
+     if 'DEVELOPER_DIR' in os.environ:
+         env['ENV']['DEVELOPER_DIR'] = os.environ['DEVELOPER_DIR']
+-        print "NOTE: Xcode detected; propagating DEVELOPER_DIR from shell environment to subcommands"
++        print("NOTE: Xcode detected; propagating DEVELOPER_DIR from shell environment to subcommands")
+diff --git a/src/mongo/SConscript b/src/mongo/SConscript
+index 5d6ec52d14..ccd588899c 100644
+--- a/src/mongo/SConscript
++++ b/src/mongo/SConscript
+@@ -157,7 +157,7 @@ js_engine_ver = get_option("js-engine") if get_option("server-js") == "on" else
+ 
+ # On windows, we need to escape the backslashes in the command-line
+ # so that windows paths look okay.
+-cmd_line = " ".join(sys.argv).encode('string-escape')
++cmd_line = " ".join(sys.argv).encode('unicode_escape')
+ if env.TargetOSIs('windows'):
+     cmd_line = cmd_line.replace('\\', r'\\')
+ 
+@@ -603,7 +603,7 @@ env.Append(MODULE_BANNERS = [distsrc.File('README'),
+                              distsrc.File('MPL-2')])
+ 
+ # If no module has introduced a file named LICENSE.txt, then inject the AGPL.
+-if sum(itertools.imap(lambda x: x.name == "LICENSE.txt", env['MODULE_BANNERS'])) == 0:
++if sum(map(lambda x: x.name == "LICENSE.txt", env['MODULE_BANNERS'])) == 0:
+     env.Append(MODULE_BANNERS = [distsrc.File('GNU-AGPL-3.0')])
+ 
+ # All module banners get staged to the top level of the tarfile, so we
+@@ -622,7 +622,7 @@ module_banner_transforms = ["--transform %s=$SERVER_DIST_BASENAME" % d for d in
+ # Allow modules to map original file name directories to subdirectories
+ # within the archive (e.g. { "src/mongo/db/modules/enterprise/docs": "snmp"})
+ archive_addition_transforms = []
+-for full_dir, archive_dir in env["ARCHIVE_ADDITION_DIR_MAP"].items():
++for full_dir, archive_dir in list(env["ARCHIVE_ADDITION_DIR_MAP"].items()):
+   archive_addition_transforms.append("--transform \"%s=$SERVER_DIST_BASENAME/%s\"" %
+                                      (full_dir, archive_dir))
+ 
+diff --git a/src/mongo/base/generate_error_codes.py b/src/mongo/base/generate_error_codes.py
+index 420ee964ff..b704767a01 100644
+--- a/src/mongo/base/generate_error_codes.py
++++ b/src/mongo/base/generate_error_codes.py
+@@ -26,6 +26,8 @@
+ #    delete this exception statement from all source files in the program,
+ #    then also delete it in the license file.
+ 
++from __future__ import unicode_literals
++
+ """Generate error_codes.{h,cpp} from error_codes.err.
+ 
+ Format of error_codes.err:
+@@ -93,7 +95,7 @@ def main(argv):
+                 categories=error_classes,
+                 )
+ 
+-        with open(output, 'wb') as outfile:
++        with open(output, 'w') as outfile:
+             outfile.write(text)
+ 
+ def die(message=None):
+diff --git a/src/mongo/db/auth/generate_action_types.py b/src/mongo/db/auth/generate_action_types.py
+index b712b29666..39252ed293 100755
+--- a/src/mongo/db/auth/generate_action_types.py
++++ b/src/mongo/db/auth/generate_action_types.py
+@@ -227,7 +227,7 @@ def hasDuplicateActionTypes(actionTypes):
+     prevActionType = sortedActionTypes[0]
+     for actionType in sortedActionTypes[1:]:
+         if actionType == prevActionType:
+-            print 'Duplicate actionType %s\n' % actionType
++            print('Duplicate actionType %s\n' % actionType)
+             didFail = True
+         prevActionType = actionType
+ 
+@@ -240,7 +240,7 @@ def parseActionTypesFromFile(actionTypesFilename):
+ 
+ if __name__ == "__main__":
+     if len(sys.argv) != 4:
+-        print "Usage: generate_action_types.py <path to action_types.txt> <header file path> <source file path>"
++        print("Usage: generate_action_types.py <path to action_types.txt> <header file path> <source file path>")
+         sys.exit(-1)
+ 
+     actionTypes = parseActionTypesFromFile(sys.argv[1])
+diff --git a/src/mongo/db/fts/generate_stop_words.py b/src/mongo/db/fts/generate_stop_words.py
+index e0dc801ca9..e0aad760e8 100644
+--- a/src/mongo/db/fts/generate_stop_words.py
++++ b/src/mongo/db/fts/generate_stop_words.py
+@@ -7,7 +7,7 @@ def generate( header, source, language_files ):
+     for x in language_files:
+         print( "\t%s" % x )
+ 
+-    out = open( header, "wb" )
++    out = open( header, "w" )
+     out.write( """
+ #pragma once
+ #include <set>
+@@ -24,7 +24,7 @@ namespace fts {
+ 
+ 
+ 
+-    out = open( source, "wb" )
++    out = open( source, "w" )
+     out.write( '#include "%s"' % header.rpartition( "/" )[2].rpartition( "\\" )[2] )
+     out.write( """
+ namespace mongo {
+@@ -40,7 +40,7 @@ namespace fts {
+         out.write( '  // %s\n' % l_file )
+         out.write( '  {\n' )
+         out.write( '   const char* const words[] = {\n' )
+-        for word in open( l_file, "rb" ):
++        for word in open( l_file, "r" ):
+             out.write( '       "%s",\n' % word.strip() )
+         out.write( '   };\n' )
+         out.write( '   const size_t wordcnt = sizeof(words) / sizeof(words[0]);\n' )
+diff --git a/src/mongo/db/fts/unicode/gen_diacritic_map.py b/src/mongo/db/fts/unicode/gen_diacritic_map.py
+index 08cfa95cda..7c623aff60 100644
+--- a/src/mongo/db/fts/unicode/gen_diacritic_map.py
++++ b/src/mongo/db/fts/unicode/gen_diacritic_map.py
+@@ -45,7 +45,7 @@ def add_diacritic_mapping(codepoint):
+     # c : recomposed unicode character with diacritics removed
+     a = chr(codepoint)
+     d = normalize('NFD', a)
+-    r = u''
++    r = ''
+ 
+     for i in range(len(d)):
+         if ord(d[i]) not in diacritics:
+diff --git a/src/mongo/db/query/collation/generate_icu_init_cpp.py b/src/mongo/db/query/collation/generate_icu_init_cpp.py
+index 8ae084aeec..7c576f6ffe 100755
+--- a/src/mongo/db/query/collation/generate_icu_init_cpp.py
++++ b/src/mongo/db/query/collation/generate_icu_init_cpp.py
+@@ -26,6 +26,9 @@
+ #    delete this exception statement from all source files in the program,
+ #    then also delete it in the license file.
+ 
++from __future__ import unicode_literals
++
++import array
+ import optparse
+ import os
+ import sys
+@@ -110,8 +113,8 @@ MONGO_INITIALIZER(LoadICUData)(InitializerContext* context) {
+ '''
+     decimal_encoded_data = ''
+     with open(data_file_path, 'rb') as data_file:
+-        decimal_encoded_data = ','.join([str(ord(byte)) for byte in data_file.read()])
+-    with open(cpp_file_path, 'wb') as cpp_file:
++        decimal_encoded_data = ','.join([str(byte) for byte in array.array("B", data_file.read()).tolist()])
++    with open(cpp_file_path, 'w') as cpp_file:
+         cpp_file.write(source_template % dict(decimal_encoded_data=decimal_encoded_data))
+ 
+ if __name__ == '__main__':
