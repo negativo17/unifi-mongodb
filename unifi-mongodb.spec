@@ -57,7 +57,7 @@ scons-2 core \
   --use-system-tcmalloc \
   --use-system-yaml \
   --mmapv1=on \
-  --wiredtiger=off \
+  --wiredtiger=on \
   --ssl \
   --nostrip \
   --disable-warnings-as-errors \
