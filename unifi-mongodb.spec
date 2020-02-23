@@ -1,5 +1,5 @@
 Name:           unifi-mongodb
-Version:        3.6.14
+Version:        3.6.17
 Release:        1%{?dist}
 Summary:        Private MongoDB for UniFi
 License:        SSPL
@@ -75,5 +75,8 @@ install -p -D -m 755 mongo %{buildroot}%{_libdir}/unifi/bin/mongo
 %{_libdir}/unifi/bin/mongos
 
 %changelog
+* Sun Feb 23 2020 Simone Caronni <negativo17@gmail.com> - 3.6.17-1
+- Update to 3.6.17.
+
 * Sun Oct 20 2019 Simone Caronni <negativo17@gmail.com> - 3.6.14-1
 - First build.
